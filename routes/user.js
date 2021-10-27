@@ -90,36 +90,23 @@ router.get('/:id', async function (request, response) {
 
 router.get('/child/:id', async function(request, response) {
   let id = request.params.id;
-  var array = [];
+  var res_array = [];
+
   async function getChild(id) {
-    const users = [];
-    var user = await User.findById(id)
-  
-    if (user.left_id) {
-      getChild(user.left_id).then( (res) => {
-        array.concat(res);
-      })
-  
-      let left = await User.findById(user.left_id);
-      users.push(left);
+    let user = await User.findById(id);
+    res_array.push(user);
+
+    if(user.left_id) {
+      await getChild(user.left_id);
     }
     if(user.right_id) {
-      getChild(user.right_id).then( (res) => {
-        array.concat(res);
-      });
-  
-      let right = await User.findById(user.right_id);
-  
-      users.push(right);
-    }  
-    // array.concat(users);
-    return users;
+      await getChild(user.right_id)
+    }
   }
-// console.log(array);
-  getChild(id)
-  .then( (res) => {
-    response.send(res);
-  });
+
+  await getChild(id);
+
+  response.send(res_array);
 })
 
 router.delete('/:id', async function(request, response) {
