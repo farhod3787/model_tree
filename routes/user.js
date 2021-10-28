@@ -88,25 +88,45 @@ router.get('/:id', async function (request, response) {
   }
 })
 
-router.get('/child/:id', async function(request, response) {
-  let id = request.params.id;
-  var res_array = [];
+let array = []; 
 
-  async function getChild(id) {
-    let user = await User.findById(id);
-    res_array.push(user);
+async function getChild(id) {
+  let user = await User.findById(id);
+  array.push(user);
 
-    if(user.left_id) {
-      await getChild(user.left_id);
-    }
-    if(user.right_id) {
-      await getChild(user.right_id)
-    }
+  if (user.left_id) {
+    array = await getChild(user.left_id);
+  }
+  if (user.right_id) {  
+    array = await getChild(user.right_id);
   }
 
-  await getChild(id);
+return array;
+}
 
-  response.send(res_array);
+router.get('/child/:id', async function(request, response) {
+  let id = request.params.id; 
+  let left_users = [];
+  let right_users = [];
+
+  let left = 0;
+  let right = 0;
+  
+  let user = await User.findById(id);
+
+  if(user.left_id) {
+    left_users = await getChild(user.left_id);
+    array = [];
+  }
+  if (user.right_id) {
+    right_users = await getChild(user.right_id);
+    array = [];
+  }
+
+  left = left_users.length;
+  right = right_users.length;
+
+  response.send({ left_users, right_users, left, right });
 })
 
 router.delete('/:id', async function(request, response) {
