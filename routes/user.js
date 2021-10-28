@@ -3,17 +3,33 @@ const User = require('../models/user');
 
 const router = express.Router();
 
+let array = []; 
+
+async function getChild(id) {
+  let user = await User.findById(id);
+  array.push(user);
+
+  if (user.left_id) {
+    array = await getChild(user.left_id);
+  }
+  if (user.right_id) {  
+    array = await getChild(user.right_id);
+  }
+
+return array;
+}
+
 router.post('/', async function(request, response, next) {
   let body = request.body;
   
   let user = {
     name: body.name,
-    parent_id: null
+    parentId: null
   };
 
-  if (body.parent_id) {
+  if (body.parentId) {
     try {
-      let parent_user = await User.findById(body.parent_id);
+      let parent_user = await User.findById(body.parentId);
 
       if(parent_user.left_id && parent_user.right_id) {
           response.status(400).send({
@@ -22,7 +38,7 @@ router.post('/', async function(request, response, next) {
           });
       }
 
-      user.parent_id = body.parent_id;
+      user.parentId = body.parentId;
       
       try {
         const new_user = await new User(user).save();
@@ -88,21 +104,6 @@ router.get('/:id', async function (request, response) {
   }
 })
 
-let array = []; 
-
-async function getChild(id) {
-  let user = await User.findById(id);
-  array.push(user);
-
-  if (user.left_id) {
-    array = await getChild(user.left_id);
-  }
-  if (user.right_id) {  
-    array = await getChild(user.right_id);
-  }
-
-return array;
-}
 
 router.get('/child/:id', async function(request, response) {
   let id = request.params.id; 
