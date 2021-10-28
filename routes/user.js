@@ -105,15 +105,16 @@ router.get('/:id', async function (request, response) {
 })
 
 
-router.get('/child/:id', async function(request, response) {
-  let id = request.params.id; 
+router.get('/child/:id', async function(request, response) { 
   let left_users = [];
   let right_users = [];
-
+  let current_user = [];
+  let users = [];
   let left = 0;
   let right = 0;
   
-  let user = await User.findById(id);
+  let user = await User.findById(request.params.id);
+  current_user.push(user);
 
   if(user.left_id) {
     left_users = await getChild(user.left_id);
@@ -127,7 +128,9 @@ router.get('/child/:id', async function(request, response) {
   left = left_users.length;
   right = right_users.length;
 
-  response.send({ left_users, right_users, left, right });
+  users.push(...current_user, ...left_users, ...right_users);
+
+  response.send({ users, left, right });
 })
 
 router.delete('/:id', async function(request, response) {
