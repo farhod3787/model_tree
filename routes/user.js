@@ -4,12 +4,14 @@ const User = require('../models/user');
 const router = express.Router();
 
 let array = []; 
+let block_users = [];
 
 async function getChild(id) {
   let user = await User.findById(id);
   if (!user.blocked) {
     array.push(user);
   }
+
     if (user.left_id) {
       array = await getChild(user.left_id);
     }
@@ -18,6 +20,23 @@ async function getChild(id) {
     }
 
   return array;
+}
+
+async function blockUsers(id) {
+  let block_user = await User.findById(id);
+
+  if(block_user.blocked) {
+    block_users.push(block_user);
+  }
+
+  if(block_user.left_id) {
+    block_users = await blockUsers(block_user.left_id);
+  }
+  if(block_user.right_id) {
+    block_users = await blockUsers(block_user.right_id);
+  }
+
+  return block_users;
 }
 
 router.post('/', async function(request, response, next) {
@@ -92,6 +111,21 @@ router.get('/', async function (request, response) {
   response.send(users);
 })
 
+router.get('/change/:id', async function(request, response) {
+  let user = await User.findById(request.params.id);
+
+  user.blocked = !user.blocked;
+
+  try {
+    console.log(user);
+    await User.findByIdAndUpdate(request.params.id, { $set: user });
+
+    response.send({ status: user.blocked ? 'block' : 'unblock', message : 'Status changed' });
+  } catch (error) {
+    response.send(error);
+  }
+})
+
 router.get('/:id', async function (request, response) {
   let id = request.params.id;
 
@@ -111,9 +145,15 @@ router.get('/child/:id', async function(request, response) {
   let right_users = [];
   let current_user = [];
   let users = [];
+  let block_accounts = [];
   let left = 0;
   let right = 0;
+  let left_block = 0;
+  let right_block = 0;
   
+  let left_blocks = [];
+  let right_blocks = [];
+
   let user = await User.findById(request.params.id);
   if(!user.blocked) {
     current_user.push(user);
@@ -121,18 +161,25 @@ router.get('/child/:id', async function(request, response) {
     if(user.left_id) {
       left_users = await getChild(user.left_id);
       array = [];
+      left_blocks = await blockUsers(user.left_id);
+      block_users = [];
     }
     if (user.right_id) {
       right_users = await getChild(user.right_id);
       array = [];
+      right_blocks = await blockUsers(user.right_id);
+      block_users = [];
     }
-  
+
     left = left_users.length;
     right = right_users.length;
-  
+    left_block = left_blocks.length;
+    right_block = right_blocks.length; 
+
     users.push(...current_user, ...left_users, ...right_users);
-  
-    response.send({ users, left, right });
+    block_accounts = left_blocks.concat(right_blocks);
+
+    response.send({ users, block_accounts, left, right, left_block, right_block });
   } else {
     response.status(400).send('User blocked');
   }
