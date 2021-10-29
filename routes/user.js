@@ -7,16 +7,17 @@ let array = [];
 
 async function getChild(id) {
   let user = await User.findById(id);
-  array.push(user);
-
-  if (user.left_id) {
-    array = await getChild(user.left_id);
+  if (!user.blocked) {
+    array.push(user);
   }
-  if (user.right_id) {  
-    array = await getChild(user.right_id);
-  }
+    if (user.left_id) {
+      array = await getChild(user.left_id);
+    }
+    if (user.right_id) {  
+      array = await getChild(user.right_id);
+    }
 
-return array;
+  return array;
 }
 
 router.post('/', async function(request, response, next) {
@@ -114,23 +115,27 @@ router.get('/child/:id', async function(request, response) {
   let right = 0;
   
   let user = await User.findById(request.params.id);
-  current_user.push(user);
-
-  if(user.left_id) {
-    left_users = await getChild(user.left_id);
-    array = [];
+  if(!user.blocked) {
+    current_user.push(user);
+  
+    if(user.left_id) {
+      left_users = await getChild(user.left_id);
+      array = [];
+    }
+    if (user.right_id) {
+      right_users = await getChild(user.right_id);
+      array = [];
+    }
+  
+    left = left_users.length;
+    right = right_users.length;
+  
+    users.push(...current_user, ...left_users, ...right_users);
+  
+    response.send({ users, left, right });
+  } else {
+    response.status(400).send('User blocked');
   }
-  if (user.right_id) {
-    right_users = await getChild(user.right_id);
-    array = [];
-  }
-
-  left = left_users.length;
-  right = right_users.length;
-
-  users.push(...current_user, ...left_users, ...right_users);
-
-  response.send({ users, left, right });
 })
 
 router.delete('/:id', async function(request, response) {
