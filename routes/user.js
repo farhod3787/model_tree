@@ -39,6 +39,117 @@ async function blockUsers(id) {
   return block_users;
 }
 
+async function reGenerate() {
+  let user = await User.find();
+  for(let i = 0; i < user.length; i++) {
+    let lefts = [];
+    let rights = [];
+
+    if (user[i].left_id) {
+      lefts = await getChild(user[i].left_id);
+      array = [];
+    }
+    if (user[i].right_id) {
+      rights = await getChild(user[i].right_id);
+      array = [];
+    }
+
+    user[i].left = lefts.length;
+    user[i].right = rights.length;
+    
+    try {
+      await User.findByIdAndUpdate(user[i]._id, { $set: user[i] });
+    } catch (error) {
+      response.send({
+        message: 'Error in regenerate function',
+        user_name: user[i].name
+      })
+    }
+  }
+}
+
+async function fillData() {
+  let parentId = null;
+  let hand = true;
+  for (let i = 1; i <= 5; i++) {
+    let new_user = {
+      name: 'Fill_' + i,
+      parentId: parentId
+    }
+
+    if (new_user.parentId) {
+      try {
+        let parent_user = await User.findById(body.parentId);
+  
+        if(parent_user.left_id && parent_user.right_id) {
+            response.status(400).send({
+              message: 'Parent already busy',
+              status: 400
+            });
+        }
+        
+        try {
+          const new_account = await new User(new_user).save();
+          
+          if(!parent_user.right_id && !parent_user.left_id) {
+            parent_user.left_id = new_account._id
+          } else if(parent_user.left_id && !parent_user.right_id) {
+            parent_user.right_id = new_account._id
+          } 
+  
+          try {
+            await User.findByIdAndUpdate(parent_user._id, 
+              {
+                $set: {
+                  left_id: parent_user.left_id, 
+                  right_id: parent_user.right_id 
+                }
+              });
+  
+              if(!hand) {
+                parentId = new_account._id;
+              }
+              hand = !hand;
+
+              response.status(200).send('New User saved')
+          } catch (error) {
+  
+            response.status(400).send(error)
+          }
+        } catch (error) {
+  
+          response.status(400).send(error)
+        }
+      } catch (error) {
+  
+        response.status(400).send({
+          message: 'Parent not found',
+          status: 400
+        })
+      }
+    } else {      
+        try {
+          const first_user = await new User(new_user).save();
+          parentId = first_user._id;
+          response.status(200).send('New User saved')
+        } catch (error) {
+          response.status(400).send(error)        
+        }
+    }  
+  }
+}
+
+router.get('/regenerate', async function(request, response) {
+  try {
+    await reGenerate();
+
+    // await fillData();
+    response.send('Success');
+  } catch(error) {
+    response.send(error);
+  }
+})
+
 router.post('/', async function(request, response, next) {
   let body = request.body;
   
