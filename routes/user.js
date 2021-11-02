@@ -1,10 +1,16 @@
 const express = require('express');
 const User = require('../models/user');
+const CronJob = require('cron').CronJob;
 
 const router = express.Router();
 
 let array = []; 
 let block_users = [];
+let dummy = 0;
+
+var job = new CronJob('*/2 * * * *', () => {
+  reGenerate(); // this function generated every 2 min
+})
 
 async function getChild(id) {
   let user = await User.findById(id);
@@ -40,38 +46,47 @@ async function blockUsers(id) {
 }
 
 async function reGenerate() {
-  let user = await User.find();
-  for(let i = 0; i < user.length; i++) {
-    let lefts = [];
-    let rights = [];
 
-    if (user[i].left_id) {
-      lefts = await getChild(user[i].left_id);
-      array = [];
-    }
-    if (user[i].right_id) {
-      rights = await getChild(user[i].right_id);
-      array = [];
-    }
+  let user = await User.find().skip(dummy).limit(100);
+  console.log(user.length, dummy);
+  dummy = dummy + 100;
 
-    user[i].left = lefts.length;
-    user[i].right = rights.length;
-    
-    try {
-      await User.findByIdAndUpdate(user[i]._id, { $set: user[i] });
-    } catch (error) {
-      response.send({
-        message: 'Error in regenerate function',
-        user_name: user[i].name
-      })
+  if(user.length <= 100) {
+
+    for(let i = 0; i < user.length; i++) {
+      let lefts = [];
+      let rights = [];
+
+      if (user[i].left_id) {
+        lefts = await getChild(user[i].left_id);
+        array = [];
+      }
+      if (user[i].right_id) {
+        rights = await getChild(user[i].right_id);
+        array = [];
+      }
+
+      user[i].left = lefts.length;
+      user[i].right = rights.length;
+      
+      try {
+        await User.findByIdAndUpdate(user[i]._id, { $set: user[i] });
+      } catch (error) {
+        response.send({
+          message: 'Error in regenerate function',
+          user_name: user[i].name
+        })
+      }
     }
+  } else {
+    dummy = 0;
   }
 }
 
 async function fillData() {
   let parentId = null;
   let hand = true;
-  for (let i = 1; i <= 7; i++) {
+  for (let i = 1; i <= 1000; i++) {
     let new_user = {
       name: 'Fill_' + i,
       parentId: parentId
@@ -131,14 +146,14 @@ router.get('/fillData', async function(request, response) {
   }
 })
 
-router.get('/regenerate', async function(request, response) {
-  try {
-    await reGenerate();
+router.get('/regenerateStart', async function(request, response) {
+  job.start();
+  response.send('Regenate function started')
+})
 
-    response.send('Success');
-  } catch(error) {
-    response.send(error);
-  }
+router.get('/regenerateStop', async function(request, response) {
+  job.stop();
+  response.send('Regenate function stop')
 })
 
 router.post('/', async function(request, response, next) {
