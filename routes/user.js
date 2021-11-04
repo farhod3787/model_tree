@@ -1,6 +1,7 @@
 const express = require('express');
 const User = require('../models/user');
 const CronJob = require('cron').CronJob;
+const axios = require('axios');
 
 const router = express.Router();
 
@@ -154,6 +155,24 @@ router.get('/regenerateStart', async function(request, response) {
 router.get('/regenerateStop', async function(request, response) {
   job.stop();
   response.send('Regenate function stop')
+})
+
+router.get('/moysklad', async function(request, response) {
+  var config = {
+    method: 'get',
+    url: 'https://online.moysklad.ru/api/remap/1.2/entity/assortment?offset=1&limit=100&stockstore=https://online.moysklad.ru/api/remap/1.1/entity/store/33de81bc-8a92-11e3-658d-002590a28eca&groupBy=variant',
+    headers: { 
+      'Authorization': 'Basic YWRtaW5Aa29sZXNvdjo0NjNmOTg1YmM4MQ=='
+    }
+  };
+  
+  axios(config)
+  .then(function (res) {
+    console.log(res.data);
+  })
+  .catch(function (error) {
+    response.send(error);
+  });
 })
 
 router.post('/', async function(request, response, next) {

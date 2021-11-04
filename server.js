@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 
 const userRouter = require('./routes/user');
+const werehouseRouter = require('./routes/moysklad');
 
 const config = require('./config');
 
@@ -21,6 +22,7 @@ mongoose.connect(config.database).then( () => {
  app.use(express.json());
 
 app.use('/api/user', userRouter);
+app.use('/moysklad', werehouseRouter);
 
 app.listen(config.port);
 
