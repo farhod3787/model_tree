@@ -20,13 +20,11 @@ var config = {
 };
 
 async function getData() {
-  console.log('Start getData function');
   let array = []; 
   offset++;
 
   let data = fs.readFileSync('data.json', 'utf8');
   if(data) array = JSON.parse(data);
-  console.log(array.length);
   axios(config)
   .then(function (res) {
     fs.writeFile('data.json', JSON.stringify(array.concat(res.data.rows)), (err) => {
