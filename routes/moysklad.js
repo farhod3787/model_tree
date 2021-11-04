@@ -4,12 +4,12 @@ const CronJob = require('cron').CronJob;
 const router = express.Router();
 var axios = require('axios');
 
-var cron = new CronJob('*/3 * * * *', () => {
+var cron = new CronJob('* * * * *', () => {
   getData(); // this function generated every 3 min
 })
 
-let offset = 0;
-let limit = 10;
+let offset = 1;
+let limit = 100;
 
 var config = {
   method: 'get',
@@ -21,15 +21,16 @@ var config = {
 
 async function getData() {
   let array = []; 
-  offset++;
 
   let data = fs.readFileSync('data.json', 'utf8');
   if(data) array = JSON.parse(data);
+
   axios(config)
   .then(function (res) {
     fs.writeFile('data.json', JSON.stringify(array.concat(res.data.rows)), (err) => {
       if(err) console.log(err);
       console.log('Complate');
+      offset = offset + limit;
     })
   })
   .catch(function (error) {
