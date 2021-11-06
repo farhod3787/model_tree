@@ -15,9 +15,9 @@ var job = new CronJob('*/2 * * * *', () => {
 
 async function getChild(id) {
   let user = await User.findById(id);
-  if (!user.blocked) {
+  // if (!user.blocked) {
     array.push(user);
-  }
+  // }
 
     if (user.left_id) {
       array = await getChild(user.left_id);
@@ -73,10 +73,7 @@ async function reGenerate() {
       try {
         await User.findByIdAndUpdate(user[i]._id, { $set: user[i] });
       } catch (error) {
-        response.send({
-          message: 'Error in regenerate function',
-          user_name: user[i].name
-        })
+        console.log(error);
       }
     }
   } else {
@@ -155,24 +152,6 @@ router.get('/regenerateStart', async function(request, response) {
 router.get('/regenerateStop', async function(request, response) {
   job.stop();
   response.send('Regenate function stop')
-})
-
-router.get('/moysklad', async function(request, response) {
-  var config = {
-    method: 'get',
-    url: 'https://online.moysklad.ru/api/remap/1.2/entity/assortment?offset=1&limit=100&stockstore=https://online.moysklad.ru/api/remap/1.1/entity/store/33de81bc-8a92-11e3-658d-002590a28eca&groupBy=variant',
-    headers: { 
-      'Authorization': 'Basic YWRtaW5Aa29sZXNvdjo0NjNmOTg1YmM4MQ=='
-    }
-  };
-  
-  axios(config)
-  .then(function (res) {
-    console.log(res.data);
-  })
-  .catch(function (error) {
-    response.send(error);
-  });
 })
 
 router.post('/', async function(request, response, next) {
@@ -328,6 +307,16 @@ router.delete('/:id', async function(request, response) {
     response.send('Data deleted');
   } catch (error) {
     response.send(error);
+  }
+})
+
+router.delete('/', async function(request, response) {
+  try {
+    await User.deleteMany();
+
+    response.send('User schema clear')
+  } catch (error) {
+    response.send('Error')
   }
 })
 

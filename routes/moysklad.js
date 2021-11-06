@@ -4,12 +4,8 @@ const CronJob = require('cron').CronJob;
 const router = express.Router();
 var axios = require('axios');
 
-var cron = new CronJob('* * * * *', () => {
-  getData(); // this function generated every 3 min
-})
-
 let offset = 1;
-let limit = 100;
+let limit = 1;
 
 var config = {
   method: 'get',
@@ -19,24 +15,35 @@ var config = {
   }
 };
 
-async function getData() {
+ function getData() {
   let array = []; 
+  offset++;
 
-  let data = fs.readFileSync('data.json', 'utf8');
-  if(data) array = JSON.parse(data);
+  // let data = fs.readFile('data.json', 'utf8', (err) => {
+  //   if(err) console.log(err);
+  // });
 
-  axios(config)
-  .then(function (res) {
-    fs.writeFile('data.json', JSON.stringify(array.concat(res.data.rows)), (err) => {
+  // if(data) array = JSON.parse(data);
+
+    fs.writeFile('data.json', JSON.stringify([1, 2, 3]), (err) => {
       if(err) console.log(err);
-      console.log('Complate');
-      offset = offset + limit;
+      console.log('Yes');
     })
-  })
-  .catch(function (error) {
-    console.log(error);
-  });
+  // axios(config)
+  // .then(function (res) {
+  //   fs.writeFile('data.json', JSON.stringify(array.concat(res.data.rows)), (err) => {
+  //     if(err) console.log(err);
+  //     console.log('Complate');
+  //   });
+  // })
+  // .catch(function (error) {
+  //   console.log(error);
+  // });
 }
+
+var cron = new CronJob('* * * * * *', () => {
+  getData(); // this function generated every 3 min
+})
 
 router.get('/start', async function(request, response) {
   cron.start();
@@ -44,7 +51,7 @@ router.get('/start', async function(request, response) {
 })
 
 router.get('/stop', async function(request, response) {
-  cron.start();
+  cron.stop();
    response.send('Stop')
 })
  
