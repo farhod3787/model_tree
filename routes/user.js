@@ -87,7 +87,9 @@ async function fillData() {
   for (let i = 1; i <= 1000; i++) {
     let new_user = {
       name: 'Fill_' + i,
-      parentId: parentId
+      parentId: parentId,
+      left: 0,
+      right: 0
     }
 
     if (new_user.parentId) {
@@ -134,6 +136,23 @@ async function fillData() {
   }
 }
 
+async function calculate(user_id, parent_id) {
+  try {
+    let user = await User.findById(user_id);
+    let parent_user = await User.findById(parent_id);
+
+    if (parent_user.left_id == user._id) parent_user.left++;
+    if (parent_user.right_id == user._id) parent_user.right++;
+    
+    await User.findByIdAndUpdate(parent_id, {$set: parent_user});
+
+    if(parent_user.parentId) calculate(parent_user._id, parent_user.parentId);
+
+  } catch (error) {
+    return error;
+  }
+}
+
 router.get('/fillData', async function(request, response) {
   try {
     await fillData();
@@ -159,7 +178,9 @@ router.post('/', async function(request, response, next) {
   
   let user = {
     name: body.name,
-    parentId: null
+    parentId: null,
+    left: 0,
+    right: 0
   };
 
   if (body.parentId) {
@@ -192,6 +213,8 @@ router.post('/', async function(request, response, next) {
                 right_id: parent_user.right_id 
               }
             });
+
+            if (new_user.parentId) await calculate(new_user._id, new_user.parentId);
 
             response.status(200).send('New User saved')
         } catch (error) {
